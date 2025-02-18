@@ -2,17 +2,23 @@
 import sys
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 class TTYConfig:
     def __init__(this):
         this.AltSingleQuote = True
         this.DebugOutput = False
-        this.FontName = "Courier"
+        this.FontName = "CourierStd"
+        this.TtfFile = "CourierStd.ttf"
         this.FontSize = 12
         this.LeftMargin = 72
         this.CharWidth = 7.21
         this.TopMargin = 14
         this.CharHeight = 11.95
+        this.CharPos = {
+            "_": -1
+        }
 
 class TTY:
     def __init__(this, filename, config):
@@ -22,12 +28,16 @@ class TTY:
         this._escaping = False
         this._config = config
         this._colour = (0, 0, 0)
+        this._create_font()
         this._init_page()
+
+    def _create_font(this):
+        pdfmetrics.registerFont(TTFont(this._config.FontName, this._config.TtfFile))
 
     def _init_page(this):
         this._canvas.setFont(this._config.FontName, this._config.FontSize)
         if this._config.DebugOutput:
-            this._canvas.setFillColorRGB(0, 1, 0)
+            this._canvas.setFillColorRGB(1, 0, 0)
         else:
             this._canvas.setFillColorRGB(this._colour[0], this._colour[1], this._colour[2])
 
@@ -79,7 +89,12 @@ class TTY:
             this._init_page()
             this.putchar(c)
             return
-        this._canvas.drawString(this._config.LeftMargin + this._col * this._config.CharWidth, this._config.TopMargin + this._row * this._config.CharHeight, chr(c))
+        x = this._config.LeftMargin + this._col * this._config.CharWidth
+        y = this._config.TopMargin + this._row * this._config.CharHeight
+        c = chr(c);
+        if c in this._config.CharPos:
+            y += this._config.CharPos[c]
+        this._canvas.drawString(x, y, c)
         this._col += 1
 
     def print_red(this):
